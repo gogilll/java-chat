@@ -1,82 +1,76 @@
 # JavaFX Chat
 
-Многопользовательский чат с комнатами, историей сообщений и обменом файлами.
+Многопользовательский чат с комнатами, историей сообщений и обменом файлами. Клиент на JavaFX и сервер общаются через WebSocket, данные хранятся в PostgreSQL.
+
+<!-- Скриншоты: положи картинки в папку docs/ и раскомментируй строки ниже -->
+<!-- ![Вход](docs/login.png) -->
+<!-- ![Чат](docs/chat.png) -->
+
+## Возможности
+
+- Регистрация и вход, пароли хранятся в виде хеша BCrypt с солью
+- Комнаты: создание, вход, выход, список доступных комнат (по умолчанию `general` и `random`)
+- Обмен текстовыми сообщениями в реальном времени
+- Отправка файлов
+- История сообщений комнаты при входе
+- Список пользователей онлайн
+- Валидация входящих сообщений на сервере
 
 ## Технологии
 
-- Java 17
-- JavaFX 21
-- Maven
-- WebSocket 
-- Gson
+- Java 17, Maven (многомодульный проект)
+- JavaFX 21 (FXML, CSS)
+- WebSocket (`org.java-websocket`)
+- Gson для сериализации сообщений в JSON
 - Hibernate + PostgreSQL
 - BCrypt
-- Docker
+- Docker Compose для базы данных
 
-## Структура проекта
+## Архитектура
 
-- `chat-api` — общие модели
-- `chat-server` — WebSocket сервер
-- `chat-client` — JavaFX клиент
+Проект разделён на три модуля:
+
+- `chat-api` — общие модели сообщений, которые используют и клиент, и сервер
+- `chat-server` — WebSocket-сервер
+- `chat-client` — десктопный клиент на JavaFX
+
+**Сервер.** Входящее сообщение попадает в `MessageDispatcher`, который по типу сообщения передаёт его нужному обработчику (`LoginProcessor`, `TextMessageProcessor`, `JoinRoomProcessor` и др.). Перед обработкой данные проверяются набором валидаторов. Доступ к данным спрятан за интерфейсами репозиториев: есть реализация на PostgreSQL и in-memory.
+
+**Клиент.** Построен по схеме MVVM: FXML-представления и контроллеры отделены от логики (`ViewModel`, `UseCase`), а сетевое взаимодействие вынесено в отдельный WebSocket-клиент.
 
 ## Запуск
 
-### 1. Клонировать репозиторий
+Нужны Java 17+, Maven и Docker.
+
+1. Клонировать репозиторий:
 
 ```bash
-git clone https://github.com/OOP24211/lugovskoi_java_labs.git
-cd lugovskoi_java_labs
-git checkout chat
+git clone https://github.com/gogilll/java-chat.git
+cd java-chat
 ```
 
-### 2. Создать .env файл
-
-Скопируй `.env.example` и заполни:
+2. Создать файл `.env` на основе примера и указать свой пароль от БД:
 
 ```bash
 cp .env.example .env
 ```
 
-Открой `.env` и заполни значения:
-
-```
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=chat_db
-DB_USER=postgres
-DB_PASSWORD=придумать пароль
-SERVER_PORT=8080
-SERVER_URL=ws://localhost:8080
-```
-
-### 3. Запустить базу данных
-
-Установи Docker если не установлен: https://www.docker.com/products/docker-desktop
-
-Затем в корне проекта:
+3. Поднять базу данных:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-Postgres поднимется автоматически с параметрами из `.env`.
-
-### 4. Запустить сервер
+4. Запустить сервер:
 
 ```bash
 cd chat-server
 mvn exec:java
 ```
 
-### 5. Запустить клиент
+5. В отдельном терминале запустить клиент:
 
 ```bash
 cd chat-client
 mvn javafx:run
 ```
-
-## Требования
-
-- Java 17+
-- Maven
-- Docker
